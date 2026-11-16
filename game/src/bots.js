@@ -200,7 +200,13 @@ export class Bot {
       if (this.state === 'fetch') {
         tx = this.worldRef.bomb.x;
         tz = this.worldRef.bomb.z;
-        if (Math.hypot(tx - this.pos.x, tz - this.pos.z) < 1.2) return;
+        if (Math.hypot(tx - this.pos.x, tz - this.pos.z) < 1.2) {
+          // Pick the spike up: only the carrier can plant it.
+          this.isCarrier = true;
+          this.worldRef.bomb.dropped = false;
+          this.state = 'path';
+          return;
+        }
       } else {
         if (this.pathIdx >= this.path.length) {
           this.state = 'hold';
