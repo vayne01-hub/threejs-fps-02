@@ -68,6 +68,16 @@ const world = {
   noise(x, z, team) {
     if (this.round) this.round.noises.push({ x, z, team, t: this.time });
   },
+  // The spike lives on the Round; expose it (and its plant/defuse ticks)
+  // through the world so the player and the bots share one accessor.
+  get bomb() { return this.round ? this.round.bomb : null; },
+  get noises() { return this.round ? this.round.noises : []; },
+  bombPlantTick(actor, dt, site) {
+    this.round.bombPlantTick(actor, dt, site);
+  },
+  bombDefuseTick(actor, dt) {
+    this.round.bombDefuseTick(actor, dt);
+  },
   onDamage(attacker, victim, dealt, isHead) {
     this.round.onDamage(attacker, victim, dealt, isHead);
   },
@@ -325,7 +335,7 @@ requestAnimationFrame(frame);
 
 // -- debug hook for the headless play-test (drives real game states) ---------
 window.__SABLE__ = {
-  world, round, player,
+  world, round, player, renderer,
   bots: world.bots,
   state() {
     return {
