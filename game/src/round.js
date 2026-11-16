@@ -4,8 +4,7 @@
 // The sim in main.js calls tick() once per fixed step; the HUD reads the
 // public fields.
 import { MATCH, ECONOMY, WEAPONS, GRENADE } from './config.js';
-import { losBlocked } from './math.js';
-import { COLLIDERS, SITES } from './map.js';
+import { COLLIDERS, SITES, losBlocked } from './map.js';
 import { applyDamage } from './weapons.js';
 
 export class Round {

@@ -5,10 +5,10 @@
 // Shooting reuses the same hitscan resolver as the player, with an aim
 // error that grows with distance and target movement.
 import { BOT, WEAPONS } from './config.js';
-import { rand, losBlocked } from './math.js';
+import { rand } from './math.js';
 import {
   WAYPOINTS, SITES, SPAWNS, DEFEND_HOLDS, nearestNode, findPath,
-  moveAndCollide,
+  moveAndCollide, losBlocked,
 } from './map.js';
 import {
   makeLoadout, resolveShot, spreadDir, applyDamage, damageAtRange,
