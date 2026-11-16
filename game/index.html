@@ -1,0 +1,202 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SABLE YARD — a tactical FPS</title>
+<style>
+  :root {
+    --canvas: #10141b;
+    --surface: #181e27;
+    --hairline: #2c3542;
+    --ink: #ece7db;
+    --muted: #93a0ad;
+    --amber: #f0a830;
+    --teal: #35d0c0;
+    --red: #e5484d;
+    --font-ui: system-ui, -apple-system, 'Segoe UI', sans-serif;
+    --font-readout: ui-monospace, 'SF Mono', Menlo, monospace;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; overflow: hidden; background: var(--canvas); color: var(--ink); font-family: var(--font-ui); }
+  #game, #game canvas { position: fixed; inset: 0; display: block; }
+  #hud { position: fixed; inset: 0; pointer-events: none; }
+  [hidden] { display: none !important; }
+
+  /* Crosshair: four lines whose gap follows the weapon spread. */
+  #crosshair { position: fixed; left: 50%; top: 50%; width: 0; height: 0; --gap: 6px; }
+  #crosshair i { position: absolute; background: var(--ink); opacity: .9; box-shadow: 0 0 2px #000; }
+  #crosshair i:nth-child(1) { left: -1px; top: calc(-1 * var(--gap) - 8px); width: 2px; height: 8px; }
+  #crosshair i:nth-child(2) { left: -1px; top: var(--gap); width: 2px; height: 8px; }
+  #crosshair i:nth-child(3) { top: -1px; left: calc(-1 * var(--gap) - 8px); height: 2px; width: 8px; }
+  #crosshair i:nth-child(4) { top: -1px; left: var(--gap); height: 2px; width: 8px; }
+  #crosshair .dot { left: -1px; top: -1px; width: 2px; height: 2px; }
+
+  #hitmarker { position: fixed; left: 50%; top: 50%; width: 26px; height: 26px; transform: translate(-50%, -50%) rotate(45deg); opacity: 0; }
+  #hitmarker.on { opacity: 1; }
+  #hitmarker i { position: absolute; background: #fff; }
+  #hitmarker.head i { background: var(--red); }
+  #hitmarker i:nth-child(1) { left: 12px; top: 0; width: 2px; height: 8px; }
+  #hitmarker i:nth-child(2) { left: 12px; bottom: 0; width: 2px; height: 8px; }
+  #hitmarker i:nth-child(3) { top: 12px; left: 0; height: 2px; width: 8px; }
+  #hitmarker i:nth-child(4) { top: 12px; right: 0; height: 2px; width: 8px; }
+
+  #dmg { position: fixed; inset: 0; pointer-events: none; opacity: 0; transition: opacity 120ms linear;
+    background: radial-gradient(ellipse at center, transparent 55%, rgba(229, 72, 77, .55) 100%); }
+  #dmg.on { opacity: 1; }
+
+  .readout { font-family: var(--font-readout); }
+  #health { position: fixed; left: 28px; bottom: 24px; }
+  #health .bar { width: 220px; height: 10px; background: #0009; border: 1px solid var(--hairline); }
+  #health-fill { height: 100%; width: 100%; background: var(--amber); }
+  #health .nums { display: flex; gap: 14px; margin-top: 6px; font-size: 15px; }
+  #health-num { font-size: 30px; line-height: 1; }
+  #armor-num::before { content: 'ARMOR '; color: var(--muted); font-size: 11px; }
+
+  #ammo { position: fixed; right: 32px; bottom: 24px; text-align: right; }
+  #ammo .big { font-size: 52px; line-height: 1; letter-spacing: -.03em; }
+  #ammo-reserve { font-size: 16px; color: var(--muted); }
+  #weapon-name { font-size: 13px; letter-spacing: .14em; color: var(--muted); margin-top: 4px; }
+  #money-row { font-size: 15px; margin-top: 4px; color: var(--amber); }
+  #grenades { color: var(--muted); font-size: 13px; margin-top: 2px; }
+  #reloading { color: var(--amber); font-size: 13px; letter-spacing: .2em; margin-top: 4px; }
+
+  #topbar { position: fixed; top: 18px; left: 50%; transform: translateX(-50%); display: flex; align-items: center; gap: 16px; font-family: var(--font-readout); }
+  #topbar .team { font-size: 15px; padding: 6px 10px; background: #0009; border: 1px solid var(--hairline); }
+  #score-sable { color: var(--amber); } #score-vulture { color: var(--teal); }
+  #timer { min-width: 92px; text-align: center; font-size: 20px; padding: 6px 10px; background: #0009; border: 1px solid var(--hairline); }
+  #timer.buy-phase { color: var(--amber); }
+  #timer.bomb-live { color: var(--red); animation: blink 1s steps(2) infinite; }
+  @keyframes blink { 50% { opacity: .45; } }
+  #round-num { position: fixed; top: 20px; left: 28px; font-family: var(--font-readout); font-size: 13px; color: var(--muted); letter-spacing: .12em; }
+
+  #killfeed { position: fixed; top: 20px; right: 28px; display: flex; flex-direction: column; gap: 5px; align-items: flex-end; font-family: var(--font-readout); font-size: 13px; }
+  .feed-row { background: #000a; padding: 4px 8px; border: 1px solid var(--hairline); }
+  .tk-sable { color: var(--amber); } .tk-vulture { color: var(--teal); } .tk-mid { color: var(--muted); }
+
+  #banner { position: fixed; top: 30%; left: 50%; transform: translateX(-50%); font-size: 34px; font-weight: 600; letter-spacing: .06em; text-shadow: 0 2px 12px #000; white-space: nowrap; }
+  #message { position: fixed; top: 22%; left: 50%; transform: translateX(-50%); font-size: 17px; color: var(--ink); text-shadow: 0 1px 6px #000; white-space: nowrap; }
+  #spike { position: fixed; top: 64px; left: 50%; transform: translateX(-50%); font-family: var(--font-readout); font-size: 13px; color: var(--amber); letter-spacing: .12em; text-shadow: 0 1px 6px #000; }
+
+  #progress { position: fixed; left: 50%; bottom: 22%; transform: translateX(-50%); width: 280px; text-align: center; }
+  #progress .track { height: 8px; background: #000a; border: 1px solid var(--hairline); margin-top: 6px; }
+  #progress-fill { height: 100%; width: 0%; background: var(--amber); }
+  #progress-label { font-size: 13px; letter-spacing: .18em; text-shadow: 0 1px 6px #000; }
+
+  /* Buy menu */
+  #buy { position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%); width: min(560px, 92vw); background: var(--surface); border: 1px solid var(--hairline); padding: 20px 22px; pointer-events: auto; }
+  #buy h2 { margin: 0 0 4px; font-size: 20px; letter-spacing: .06em; }
+  #buy .sub { color: var(--muted); font-size: 13px; margin-bottom: 14px; }
+  #buy-money { float: right; color: var(--amber); font-family: var(--font-readout); font-size: 18px; }
+  .buy-row { display: grid; grid-template-columns: 28px 1fr auto; gap: 10px; align-items: baseline; width: 100%; text-align: left; padding: 10px 12px; margin-top: 6px; background: #0005; border: 1px solid var(--hairline); color: var(--ink); font: inherit; cursor: pointer; }
+  .buy-row:hover { border-color: var(--amber); }
+  .buy-row.owned { opacity: .55; cursor: default; }
+  .buy-row.poor { opacity: .45; }
+  .buy-key { font-family: var(--font-readout); color: var(--muted); }
+  .buy-name { font-weight: 600; letter-spacing: .04em; }
+  .buy-desc { display: block; grid-column: 2; color: var(--muted); font-size: 12px; }
+  .buy-price { grid-row: 1 / span 2; grid-column: 3; color: var(--amber); font-family: var(--font-readout); }
+
+  .overlay { position: fixed; inset: 0; display: grid; place-items: center; padding: 24px; background: rgba(10, 13, 18, .82); }
+  .panel { width: min(520px, 100%); padding: 32px; background: var(--surface); border: 1px solid var(--hairline); }
+  .panel h1 { margin: 0 0 6px; font-size: 36px; letter-spacing: .02em; }
+  .panel h1 .amber { color: var(--amber); }
+  .panel p { margin: 0 0 20px; color: var(--muted); line-height: 1.55; font-size: 15px; }
+  .panel .big { display: block; width: 100%; padding: 13px 16px; font: inherit; font-weight: 600; font-size: 16px; border: 1px solid var(--amber); background: var(--amber); color: #14161a; cursor: pointer; }
+  .panel .big:hover { background: var(--ink); border-color: var(--ink); }
+  .keys { margin: 22px 0 0; padding: 0; list-style: none; display: grid; grid-template-columns: 1fr 1fr; gap: 8px 18px; font-size: 13px; color: var(--muted); }
+  .keys kbd { padding: 2px 6px; border: 1px solid var(--hairline); font-family: var(--font-readout); font-size: 12px; color: var(--ink); margin-right: 4px; }
+  #end-title.win { color: var(--amber); }
+  #end-title.lose { color: var(--red); }
+  #dead-note { position: fixed; top: 38%; left: 50%; transform: translateX(-50%); font-size: 22px; letter-spacing: .1em; color: var(--red); text-shadow: 0 2px 10px #000; }
+</style>
+</head>
+<body>
+<div id="game"></div>
+
+<div id="hud" aria-hidden="true">
+  <div id="crosshair"><i></i><i></i><i></i><i></i><span class="dot"></span></div>
+  <div id="hitmarker"><i></i><i></i><i></i><i></i></div>
+  <div id="dmg"></div>
+
+  <div id="health">
+    <div class="bar"><div id="health-fill"></div></div>
+    <div class="nums"><span id="health-num" class="readout">100</span><span id="armor-num" class="readout">0</span></div>
+  </div>
+
+  <div id="ammo">
+    <div class="big readout"><span id="ammo-mag">12</span><span id="ammo-reserve">/ 48</span></div>
+    <div id="weapon-name">P9 SIDEARM</div>
+    <div id="money-row"><span id="money" class="readout">$800</span> <span id="grenades" class="readout">◉ 0</span></div>
+    <div id="reloading" hidden>RELOADING…</div>
+  </div>
+
+  <div id="round-num" class="readout">ROUND 1 / 9</div>
+  <div id="topbar">
+    <span class="team">SABLE <b id="score-sable">0</b></span>
+    <span id="timer">BUY 6</span>
+    <span class="team">VULTURE <b id="score-vulture">0</b></span>
+  </div>
+  <div id="spike" hidden></div>
+  <div id="killfeed"></div>
+  <div id="banner" hidden></div>
+  <div id="message" hidden></div>
+  <div id="progress" hidden><div id="progress-label">PLANTING SPIKE…</div><div class="track"><div id="progress-fill"></div></div></div>
+  <div id="dead-note" hidden>YOU ARE DOWN</div>
+</div>
+
+<div id="buy" hidden>
+  <h2>BUY MENU <span id="buy-money">$800</span></h2>
+  <div class="sub">Freeze phase only — press B to close, 1–6 to buy.</div>
+  <div id="buy-list"></div>
+</div>
+
+<div id="overlay-start" class="overlay">
+  <section class="panel" role="dialog" aria-modal="true">
+    <h1>SABLE <span class="amber">YARD</span></h1>
+    <p>A round-based tactical shooter. Your squad attacks: push a spike site,
+    plant the spike, hold it until it blows — or wipe the defenders out.
+    First team to 5 rounds takes the match. Money buys guns between rounds;
+    stopping to aim beats spraying on the move, and headshots pay triple.</p>
+    <button id="play" class="big" type="button">CLICK TO PLAY</button>
+    <ul class="keys">
+      <li><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> Move</li>
+      <li><kbd>Mouse</kbd> Look · Click Fire</li>
+      <li><kbd>R</kbd> Reload</li>
+      <li><kbd>Ctrl</kbd>/<kbd>C</kbd> Crouch</li>
+      <li><kbd>G</kbd> Throw frag</li>
+      <li><kbd>E</kbd> Plant (hold, at a site)</li>
+      <li><kbd>B</kbd> Buy menu</li>
+      <li><kbd>1</kbd>–<kbd>4</kbd> Switch weapon</li>
+      <li><kbd>P</kbd> Pause</li>
+      <li><kbd>M</kbd> Mute</li>
+    </ul>
+  </section>
+</div>
+
+<div id="overlay-pause" class="overlay" hidden>
+  <section class="panel" role="dialog" aria-modal="true">
+    <h1>PAUSED</h1>
+    <p>The round waits for you.</p>
+    <button id="resume" class="big" type="button">RESUME</button>
+  </section>
+</div>
+
+<div id="overlay-end" class="overlay" hidden>
+  <section class="panel" role="dialog" aria-modal="true">
+    <h1 id="end-title">VICTORY</h1>
+    <p id="end-stats"></p>
+    <button id="restart" class="big" type="button">PLAY AGAIN</button>
+  </section>
+</div>
+
+<script type="importmap">
+{
+  "imports": {
+    "three": "./vendor/three/three.module.min.js"
+  }
+}
+</script>
+<script type="module" src="./src/main.js"></script>
+</body>
+</html>
