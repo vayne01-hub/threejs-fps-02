@@ -294,14 +294,16 @@ function frame(now) {
   if (player.loadout.id !== viewmodelWeapon) {
     viewmodelWeapon = player.loadout.id;
     viewmodel.children.forEach((m) => {
+      // The sight (the only part above y 0.05) tints to the weapon's tracer.
       if (m.material && m.material.color && m.geometry.type === 'BoxGeometry' && m.position.y > 0.05) {
         m.material.color.setHex(WEAPONS[viewmodelWeapon].tracer);
+        if (m.material.emissive) m.material.emissive.setHex(WEAPONS[viewmodelWeapon].tracer);
       }
     });
   }
   const bob = player.moving ? Math.sin(player.walkPhase * 2) * 0.012 : 0;
-  viewmodel.position.y = -0.26 + bob - (player.loadout.reloading ? 0.08 : 0);
-  viewmodel.position.z = -0.5 + player.recoilPitch * 1.2;
+  viewmodel.position.y = -0.27 + bob - (player.loadout.reloading ? 0.08 : 0);
+  viewmodel.position.z = -0.55 + player.recoilPitch * 1.2;
   viewmodel.rotation.x = player.loadout.reloading ? 0.5 : player.recoilPitch * 0.8;
 
   syncBotMeshes();

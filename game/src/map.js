@@ -176,7 +176,7 @@ function asphaltTexture() {
   const c = document.createElement('canvas');
   c.width = 256; c.height = 256;
   const g = c.getContext('2d');
-  g.fillStyle = '#23282e'; g.fillRect(0, 0, 256, 256);
+  g.fillStyle = '#2b3038'; g.fillRect(0, 0, 256, 256);
   for (let i = 0; i < 900; i++) {
     g.fillStyle = Math.random() < 0.5 ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.08)';
     g.fillRect((Math.random() * 256) | 0, (Math.random() * 256) | 0, 2, 2);

@@ -18,12 +18,12 @@ export function createRenderer(canvas) {
 
 export function createScene() {
   const scene = new THREE.Scene();
-  scene.background = new THREE.Color(0x11161f);
-  scene.fog = new THREE.Fog(0x11161f, 55, 110);
+  scene.background = new THREE.Color(0x1a2331);
+  scene.fog = new THREE.Fog(0x1a2331, 55, 110);
 
-  const hemi = new THREE.HemisphereLight(0x8fa3c0, 0x2a2118, 0.85);
+  const hemi = new THREE.HemisphereLight(0x9db4d0, 0x3a2f22, 1.15);
   scene.add(hemi);
-  const sun = new THREE.DirectionalLight(0xffd9a0, 1.6);
+  const sun = new THREE.DirectionalLight(0xffd9a0, 2.0);
   sun.position.set(28, 42, 18);
   sun.castShadow = true;
   sun.shadow.mapSize.set(2048, 2048);
@@ -102,27 +102,30 @@ export function poseHumanoid(body, yaw, moving, t, reloading) {
 }
 
 // The first-person viewmodel: a compact rifle held low-right of the camera.
+// Kept small and mid-grey so it reads as a gun, not a black silhouette.
 export function makeViewmodel(camera, colorHex) {
   const gun = new THREE.Group();
-  const dark = new THREE.MeshStandardMaterial({ color: 0x1a1d20, roughness: 0.45, metalness: 0.55 });
-  const accent = new THREE.MeshStandardMaterial({ color: colorHex, roughness: 0.5, metalness: 0.3 });
-  const receiver = new THREE.Mesh(new THREE.BoxGeometry(0.09, 0.12, 0.5), dark);
+  const dark = new THREE.MeshStandardMaterial({ color: 0x4a515c, roughness: 0.45, metalness: 0.55 });
+  const darker = new THREE.MeshStandardMaterial({ color: 0x2c313a, roughness: 0.5, metalness: 0.5 });
+  const accent = new THREE.MeshStandardMaterial({ color: colorHex, roughness: 0.5, metalness: 0.3, emissive: colorHex, emissiveIntensity: 0.25 });
+  const receiver = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.11, 0.42), dark);
   gun.add(receiver);
-  const barrel = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.05, 0.42), dark);
-  barrel.position.set(0, 0.03, -0.42);
+  const barrel = new THREE.Mesh(new THREE.BoxGeometry(0.045, 0.045, 0.36), darker);
+  barrel.position.set(0, 0.03, -0.36);
   gun.add(barrel);
-  const grip = new THREE.Mesh(new THREE.BoxGeometry(0.07, 0.16, 0.09), dark);
-  grip.position.set(0, -0.12, 0.12);
+  const grip = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.14, 0.08), darker);
+  grip.position.set(0, -0.11, 0.1);
   grip.rotation.x = 0.4;
   gun.add(grip);
-  const sight = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.06, 0.1), accent);
-  sight.position.set(0, 0.1, -0.05);
+  const sight = new THREE.Mesh(new THREE.BoxGeometry(0.035, 0.055, 0.09), accent);
+  sight.position.set(0, 0.09, -0.04);
   gun.add(sight);
-  const mag = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.16, 0.1), dark);
-  mag.position.set(0, -0.12, -0.08);
+  const mag = new THREE.Mesh(new THREE.BoxGeometry(0.055, 0.14, 0.09), darker);
+  mag.position.set(0, -0.11, -0.07);
   mag.rotation.x = 0.25;
   gun.add(mag);
-  gun.position.set(0.28, -0.26, -0.5);
+  gun.scale.setScalar(0.85);
+  gun.position.set(0.3, -0.27, -0.55);
   camera.add(gun);
   return gun;
 }
